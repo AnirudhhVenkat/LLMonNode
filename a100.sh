@@ -8,8 +8,8 @@
 #SBATCH --time=48:00:00
 #SBATCH --output=fastapi_server_%j.out
 #SBATCH --error=fastapi_server_%j.err
-#SBATCH --gpus=a100:1
-#SBATCH --partition=gpu
+#SBATCH --gpus=b200:1
+#SBATCH --partition=hpg-b200
 
 module load conda
 conda activate tea
