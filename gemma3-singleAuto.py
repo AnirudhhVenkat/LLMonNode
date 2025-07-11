@@ -38,16 +38,17 @@ class QueryResponse(BaseModel):
 
 # === API route ===
 @app.post("/chat", response_model=QueryResponse)
+@app.post("/chat")
 async def chat_endpoint(query: QueryRequest):
     user_text = query.user_message
 
-    # Construct messages as required by Gemma 3
+    # Construct messages for Gemma-3
     messages = [
         {"role": "system", "content": [{"type": "text", "text": "You are a helpful assistant."}]},
         {"role": "user", "content": [{"type": "text", "text": user_text}]}
     ]
 
-    # Preprocess the input
+    # Preprocess input
     inputs = processor.apply_chat_template(
         messages, add_generation_prompt=True, tokenize=True,
         return_dict=True, return_tensors="pt"
@@ -63,7 +64,7 @@ async def chat_endpoint(query: QueryRequest):
             **inputs,
             max_new_tokens=500,
             do_sample=False,
-            use_cache=True  # Ensure caching is enabled to speed up inference
+            use_cache=True
         )
         generation = generation[0][input_len:]
 
@@ -71,19 +72,32 @@ async def chat_endpoint(query: QueryRequest):
     end_time = time.time()
     elapsed_time = end_time - start_time
 
-    # Decode output tokens
+    # Decode output
     decoded = processor.decode(generation, skip_special_tokens=True)
-
-    # Count number of output tokens
     output_tokens = generation.shape[-1]
-
-    # Calculate tokens per second
     tokens_per_second = output_tokens / elapsed_time if elapsed_time > 0 else 0
 
-    return QueryResponse(
-        response=decoded,
-        elapsed_time=round(elapsed_time, 2),
-        input_tokens=input_len,
-        output_tokens=output_tokens,
-        tokens_per_second=round(tokens_per_second, 2)
-    )
+    # Calculate log-prob using the model again with labels
+    with torch.inference_mode():
+        # Reconstruct full input + generated tokens for logprob computation
+        full_input_ids = torch.cat([inputs["input_ids"][0], generation], dim=0).unsqueeze(0)
+        full_inputs = {"input_ids": full_input_ids.to(model.device)}
+        labels = full_input_ids.clone()
+
+        # Replace the input portion of the labels with -100 so they are ignored
+        labels[0, :input_len] = -100
+
+        # Compute log-probability via negative loss
+        output = model(**full_inputs, labels=labels)
+        logprob = -output.loss.item() * output_tokens
+
+    # Return full response including logprob
+    return {
+        "response": decoded,
+        "elapsed_time": round(elapsed_time, 2),
+        "input_tokens": input_len,
+        "output_tokens": output_tokens,
+        "tokens_per_second": round(tokens_per_second, 2),
+        "logprob": round(logprob, 4)  # new field!
+    }
+
