@@ -56,7 +56,7 @@ async def chat_endpoint(query: QueryRequest):
 
     inputs = tokenizer.apply_chat_template(
         messages, add_generation_prompt=True, tokenize=True,
-        return_dict=True, return_tensors="pt", enable_thinking=True
+        return_dict=True, return_tensors="pt", enable_thinking=False
     ).to(model.device)
 
     input_len = inputs["input_ids"].shape[-1]
@@ -77,10 +77,7 @@ async def chat_endpoint(query: QueryRequest):
 
     # === Decode & Token Info ===
     full_seq = gen_out.sequences[0]
-    # get the position of the last thinking token for filtering
-    index = len(full_seq) - full_seq[::-1].index(151668)
-    generated_ids = full_seq[index:]
-
+    generated_ids = full_seq[input_len:]
     output_tokens = len(generated_ids)
     decoded = tokenizer.decode(generated_ids, skip_special_tokens=True)
     tokens_per_second = output_tokens / elapsed_time if elapsed_time > 0 else 0
@@ -101,8 +98,7 @@ async def chat_endpoint(query: QueryRequest):
     with torch.inference_mode():
         full_input_ids = full_seq.unsqueeze(0)
         labels = full_input_ids.clone()
-        # keep the prompt + thinking as context
-        labels[0, :index] = -100
+        labels[0, :input_len] = -100
         output = model(input_ids=full_input_ids.to(model.device), labels=labels.to(model.device))
         logprob = -output.loss.item() * output_tokens
 
