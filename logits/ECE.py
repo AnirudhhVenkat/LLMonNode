@@ -107,7 +107,7 @@ def build_data(answers, correct_answers, qwen3_results):
     return data
 
 
-def calculate_acc(data):
+def calculate_acc_ECE(data):
     bin_0_1 = []
     bin_0_2 = []
     bin_0_3 = []
@@ -148,10 +148,28 @@ def calculate_acc(data):
             if entry['acc'] == 1:
                 acc += 1
         acc_list.append(acc/len(bin))
+    
+    confidence_list = []
+    for bin in [bin_0_1, bin_0_2, bin_0_3, bin_0_4, bin_0_5, bin_0_6, bin_0_7, bin_0_8, bin_0_9, bin_1_0]:
+        total_confidence = 0
+        for entry in bin:
+            total_confidence += entry['confidence'] 
+        confidence_list.append(total_confidence/len(bin))
+    
+    ece = 0
+    for a,b,c in zip(acc_list, confidence_list, [bin_0_1, bin_0_2, bin_0_3, bin_0_4, bin_0_5, bin_0_6, bin_0_7, bin_0_8, bin_0_9, bin_1_0]):
+        ece += abs(a-b) * (len(c)/len(data))
 
-    return acc_list
-        
-def plot_ECE(acc_list):
+    return acc_list, ece
+
+def calculate_overall_acc(data):
+    acc = 0
+    for entry in data:
+        if entry['acc'] == 1:
+            acc += 1
+    return acc/len(data)
+
+def plot_ECE(acc_list, overall_acc, ece):
 
     expected_acc = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
@@ -159,6 +177,13 @@ def plot_ECE(acc_list):
 
     plt.bar([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], acc_list, width=0.1, align='edge', label='Outputs', edgecolor='black', color='blue')
     plt.plot([0,1], [0,1], color='black', linestyle='--')
+    plt.text(0.7, 0.3, f'Accuracy={overall_acc:.2f}',
+         fontsize=12,
+         bbox=dict(facecolor='lightgray', edgecolor='black', boxstyle='round,pad=0.3'))
+    plt.text(0.7, 0.2, f'ECE={ece:.2f}',
+         fontsize=12,
+         bbox=dict(facecolor='lightgray', edgecolor='black', boxstyle='round,pad=0.3'))
+
     plt.xlabel('Confidence')
     plt.xlim(0.0, 1.0)
     plt.ylim(0.0, 1.0)
@@ -174,9 +199,11 @@ def main():
 
     data = build_data(answers, correct_answers, qwen3_results)
 
-    acc_list = calculate_acc(data)
+    acc_list, ece = calculate_acc_ECE(data)
 
-    plot_ECE(acc_list)
+    overall_acc = calculate_overall_acc(data)
+
+    plot_ECE(acc_list, overall_acc, ece)
 
 
 if __name__ == "__main__":
