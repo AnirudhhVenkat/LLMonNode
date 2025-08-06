@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-qwen3_results = json.load(open("/Users/anivenkat/LLMonNode/logits/full_results_task2.json"))
+qwen3_results = json.load(open("/Users/anivenkat/LLMonNode/logits/qwen3_full_results_task2.json"))
 original_dataset = json.load(open("/Users/anivenkat/LLMonNode/logits/original_dataset.json"))
 
 # if CoT answers exist
@@ -138,7 +138,7 @@ def calculate_acc_ECE(data):
             bin_0_8.append(entry)   
         if 0.8 <= entry['confidence'] < 0.9:
             bin_0_9.append(entry)
-        if 0.9 <= entry['confidence'] < 1.0:
+        if 0.9 <= entry['confidence'] <= 1.0:
             bin_1_0.append(entry)
 
     acc_list = []
@@ -147,14 +147,20 @@ def calculate_acc_ECE(data):
         for entry in bin:
             if entry['acc'] == 1:
                 acc += 1
-        acc_list.append(acc/len(bin))
+        if len(bin) != 0:
+            acc_list.append(acc/len(bin))
+        else:
+            acc_list.append(0)
     
     confidence_list = []
     for bin in [bin_0_1, bin_0_2, bin_0_3, bin_0_4, bin_0_5, bin_0_6, bin_0_7, bin_0_8, bin_0_9, bin_1_0]:
         total_confidence = 0
         for entry in bin:
             total_confidence += entry['confidence'] 
-        confidence_list.append(total_confidence/len(bin))
+        if len(bin) != 0:
+            confidence_list.append(total_confidence/len(bin))
+        else:
+            confidence_list.append(0)
     
     ece = 0
     for a,b,c in zip(acc_list, confidence_list, [bin_0_1, bin_0_2, bin_0_3, bin_0_4, bin_0_5, bin_0_6, bin_0_7, bin_0_8, bin_0_9, bin_1_0]):
