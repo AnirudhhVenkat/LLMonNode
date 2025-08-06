@@ -15,7 +15,7 @@ def task2_true_false_with_context():
         prompt = (
             base_question +
             f"{key}. {choice}\n"
-            "Answer with only one word: True or False.\n"
+            "Answer with only one word: True or False. Do not use any additional reasoning or justification\n"
             "Answer:"
         )
 
@@ -43,10 +43,10 @@ def task2_true_false_with_context():
                             entry["logits"][tok] = top["logit"]
 
         results[key] = entry
-        full_results.append(results)
+        
         time.sleep(1)  # Optional: adjust or remove delay if needed
 
-    
+    full_results.append(results)
     print("\n✅ Saved to full_results")
 
 
