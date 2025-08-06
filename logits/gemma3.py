@@ -3,6 +3,11 @@ from pydantic import BaseModel
 from transformers import AutoProcessor, Gemma3ForConditionalGeneration
 import torch
 import time
+from huggingface_hub import login
+
+# REPLACE with your actual token
+hf_token = "hf_YourAccessTokenHere"
+login(token=hf_token)
 
 # === Initialize the model ===
 model_id = "google/gemma-3-12b-it"
