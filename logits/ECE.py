@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-qwen3_results = json.load(open("/Users/anivenkat/LLMonNode/logits/qwen3_full_results_task2.json"))
+qwen3_results = json.load(open("/Users/anivenkat/LLMonNode/logits/gemma3_full_results_task2.json"))
 original_dataset = json.load(open("/Users/anivenkat/LLMonNode/logits/original_dataset.json"))
 
 # if CoT answers exist
@@ -194,9 +194,9 @@ def plot_ECE(acc_list, overall_acc, ece):
     plt.xlim(0.0, 1.0)
     plt.ylim(0.0, 1.0)
     plt.ylabel('Accuracy')
-    plt.title('Qwen3(8B)_ECE')
+    plt.title('Gemma3(12B)_ECE')
     plt.legend()
-    plt.savefig('Qwen3(8B)_ECE.png', dpi=300)
+    plt.savefig('Gemma3(12B)_ECE.png', dpi=300)
 
 def main():
     qwen3_results, original_dataset = (remove_CoT_qs())

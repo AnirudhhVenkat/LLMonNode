@@ -14,6 +14,8 @@
 module load conda
 conda activate tea
 
+export HF_HOME=/blue/iruchkin/YOUR_USERNAME/.cache/huggingface # modify this to your own username
+
 python -u -m uvicorn gemma3:app --host 0.0.0.0 --port 8000 --workers 1 --timeout-keep-alive 120
 
 date
